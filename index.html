@@ -13760,116 +13760,133 @@
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
         <script>
-            $(document).ready(() => {
-                // Adaptación del tamaño de pantalla
-                if (window.outerWidth < 600) {
-                    $('.desktop').hide();
-                    $('.movil').show();
-                } else {
-                    $('.movil').hide();
-                    $('.desktop').show();
+            document.addEventListener('DOMContentLoaded', () => {
+    // Adaptación del tamaño de pantalla
+    const mostrarElemento = (selector) => document.querySelector(selector).style.display = 'block';
+    const ocultarElemento = (selector) => document.querySelector(selector).style.display = 'none';
+
+    if (window.outerWidth < 600) {
+        ocultarElemento('.desktop');
+        mostrarElemento('.movil');
+    } else {
+        ocultarElemento('.movil');
+        mostrarElemento('.desktop');
+    }
+
+    // Ocultar los contenedores inicialmente
+    ocultarElemento('#contenedor_encuesta');
+    ocultarElemento('#contenedor_video');
+    ocultarElemento('#contenedor_invitacion');
+
+    // Función para mostrar errores
+    const mostrarError = (input, mensaje) => {
+        input.classList.add('is-invalid');
+        let feedback = input.nextElementSibling;
+        if (!feedback || !feedback.classList.contains('invalid-feedback')) {
+            feedback = document.createElement('div');
+            feedback.className = 'invalid-feedback';
+            feedback.textContent = mensaje;
+            input.parentNode.insertBefore(feedback, input.nextSibling);
+        }
+    };
+
+    // Función para remover errores
+    const removerError = (input) => {
+        input.classList.remove('is-invalid');
+        let feedback = input.nextElementSibling;
+        if (feedback && feedback.classList.contains('invalid-feedback')) {
+            input.parentNode.removeChild(feedback);
+        }
+    };
+
+    // Función para validar emails
+    const validarEmail = (email) => {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    };
+
+    // Función para iniciar el conteo del video
+    const iniciarConteoVideo = () => {
+        let tiempoRestante = 30; // 30 segundos requeridos
+        const urlVideo = "./video.mp4";
+        const botonContinuarVideo = document.querySelector("#boton_continuar_video");
+        botonContinuarVideo.disabled = true;
+        botonContinuarVideo.textContent = `Espera ${tiempoRestante} segundos`;
+
+        const intervalo = setInterval(() => {
+            tiempoRestante--;
+            botonContinuarVideo.textContent = `Espera ${tiempoRestante} segundos`;
+
+            if (tiempoRestante <= 0) {
+                clearInterval(intervalo);
+                botonContinuarVideo.disabled = false;
+                botonContinuarVideo.textContent = "Continuar";
+            }
+        }, 1000);
+
+        const iframe = document.querySelector("iframe");
+        iframe.src = `${urlVideo}?autoplay=1`;
+        iframe.onload = () => {
+            setTimeout(() => {
+                if (tiempoRestante > 0) {
+                    // Si el video se ha detenido antes de los 30 segundos, reinicia el contador.
+                    iniciarConteoVideo();
                 }
+            }, 30000); // Comprueba después de 30 segundos si el video aún se está reproduciendo.
+        };
+    };
 
-                // Ocultar los contenedores inicialmente
-                $("#contenedor_encuesta, #contenedor_video, #contenedor_invitacion").hide();
+    // Eventos
+    document.querySelector("#boton_enviar_encuesta").addEventListener('click', () => {
+        const presidente = document.querySelector("#presidente").value;
+        let todoValido = true;
 
-                // Función para mostrar errores
-                const mostrar_error = (input, mensaje) => {
-                    $(input).addClass('is-invalid');
-                    if ($(input).next('.invalid-feedback').length === 0) {
-                        $(input).after(`<div class="invalid-feedback">${mensaje}</div>`);
-                    }
-                };
+        removerError(document.querySelector("#presidente"));
 
-                // Función para remover errores
-                const remover_error = (input) => {
-                    $(input).removeClass('is-invalid');
-                    $(input).next('.invalid-feedback').remove();
-                };
+        if (!presidente) {
+            mostrarError(document.querySelector("#presidente"), "Por favor, selecciona una opción.");
+            todoValido = false;
+        }
 
-                // Función para validar emails
-                const validar_email = (email) => {
-                    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    return re.test(email);
-                };
+        if (todoValido) {
+            ocultarElemento("#contenedor_encuesta");
+            mostrarElemento("#contenedor_video");
+            iniciarConteoVideo();
+        }
+    });
 
-                // Función para iniciar el conteo del video
-                const iniciar_conteo_video = () => {
-                    let tiempo_restante = 30; // 30 segundos requeridos
-                    const url_video = "./video.mp4";
-                    $("#boton_continuar_video").prop('disabled', true).text(`Espera ${tiempo_restante} segundos`);
+    document.querySelector("#boton_continuar_video").addEventListener('click', () => {
+        ocultarElemento("#contenedor_video");
+        mostrarElemento("#contenedor_invitacion");
+    });
 
-                    const intervalo = setInterval(() => {
-                        tiempo_restante--;
-                        $("#boton_continuar_video").text(`Espera ${tiempo_restante} segundos`);
+    document.querySelector("#btn_nombre_correo").addEventListener('click', () => {
+        const nombre = document.querySelector("#nombre").value.trim();
+        const correoTelefono = document.querySelector("#correo_telefono").value.trim();
+        let todoValido = true;
 
-                        if (tiempo_restante <= 0) {
-                            clearInterval(intervalo);
-                            $("#boton_continuar_video").prop('disabled', false).text("Continuar");
-                        }
-                    }, 1000);
+        removerError(document.querySelector("#nombre"));
+        removerError(document.querySelector("#correo_telefono"));
 
-                    $("iframe").attr("src", `${url_video}?autoplay=1`).on('load', () => {
-                        setTimeout(() => {
-                            if (tiempo_restante > 0) {
-                                // Si el video se ha detenido antes de los 30 segundos, reinicia el contador.
-                                iniciar_conteo_video();
-                            }
-                        }, 30000); // Comprueba después de 30 segundos si el video aún se está reproduciendo.
-                    });
-                };
+        if (nombre === "") {
+            mostrarError(document.querySelector("#nombre"), "Por favor, ingresa tu nombre completo.");
+            todoValido = false;
+        }
 
-                // Eventos
-                $("#boton_enviar_encuesta").click(() => {
-                    const presidente = $("#presidente").val();
-                    let todo_valido = true;
+        if (correoTelefono === "") {
+            mostrarError(document.querySelector("#correo_telefono"), "Por favor, ingresa tu correo electrónico o teléfono.");
+            todoValido = false;
+        } else if (!validarEmail(correoTelefono) && isNaN(correoTelefono)) {
+            mostrarError(document.querySelector("#correo_telefono"), "Ingresa un correo válido o un número de teléfono.");
+            todoValido = false;
+        }
 
-                    remover_error("#presidente");
-
-                    if (presidente === null) {
-                        mostrar_error("#presidente", "Por favor, selecciona una opción.");
-                        todo_valido = false;
-                    }
-
-                    if (todo_valido) {
-                        $("#contenedor_encuesta").hide();
-                        $("#contenedor_video").show();
-                        iniciar_conteo_video();
-                    }
-                });
-
-                $("#boton_continuar_video").click(() => {
-                    $("#contenedor_video").hide();
-                    $("#contenedor_invitacion").show();
-                });
-
-                $("#btn_nombre_correo").click(() => {
-                    const nombre = $("#nombre").val().trim();
-                    const correo_telefono = $("#correo_telefono").val().trim();
-                    let todo_valido = true;
-
-                    remover_error("#nombre");
-                    remover_error("#correo_telefono");
-
-                    if (nombre === "") {
-                        mostrar_error("#nombre", "Por favor, ingresa tu nombre completo.");
-                        todo_valido = false;
-                    }
-
-                    if (correo_telefono === "") {
-                        mostrar_error("#correo_telefono", "Por favor, ingresa tu correo electrónico o teléfono.");
-                        todo_valido = false;
-                    } else if (!validar_email(correo_telefono) && isNaN(correo_telefono)) {
-                        mostrar_error("#correo_telefono", "Ingresa un correo válido o un número de teléfono.");
-                        todo_valido = false;
-                    }
-
-                    if (todo_valido) {
-                        $("#formulario_encuesta").hide();
-                        $("#contenedor_encuesta").show();
-                    }
-                });
-            });
+        if (todoValido) {
+            ocultarElemento("#formulario_encuesta"); // Asumiendo que este es el contenedor actual del formulario
+            mostrarElemento("#contenedor_encuesta"); // Mostrar el siguiente contenedor relevante
+        }
+    });
+});
         </script>
 
     </body>
